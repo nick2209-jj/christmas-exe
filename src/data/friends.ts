@@ -80,9 +80,18 @@ export const friendGreetings: FriendGreeting[] = [
 ]
 
 export function getFriendGreeting(name: string): FriendGreeting | undefined {
-  const normalizedName = name.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+  const normalizedName = name.trim().replace(/\s+/g, ' ').toLowerCase()
+  const exactMatch = friendGreetings.find((friend) => friend.name.toLowerCase() === normalizedName)
+  if (exactMatch) return exactMatch
+
+  const firstNameMatch = friendGreetings.find((friend) => {
+    const firstName = friend.name.split(' ')[0].toLowerCase()
+    return firstName === normalizedName
+  })
+  if (firstNameMatch) return firstNameMatch
+
   return friendGreetings.find((friend) => {
-    const friendName = friend.name.toLocaleLowerCase()
-    return friendName === normalizedName || (!friendName.includes(' ') && normalizedName.startsWith(`${friendName} `))
+    const friendName = friend.name.toLowerCase()
+    return !friendName.includes(' ') && normalizedName.startsWith(`${friendName} `)
   })
 }

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Check, Copy, Gift, Heart, Music2, RotateCcw, Share2, Sparkles, VolumeX } from 'lucide-react'
 import ChristmasTree from './components/ChristmasTree'
 import SantaSleigh from './components/SantaSleigh'
 import Snowfall from './components/Snowfall'
-import { getFriendGreeting } from './data/friends'
+import { friendGreetings } from './data/friends'
+import { normalizeName, selectGreeting, type PersonalizedGreeting } from './utils/greetings'
 
 type Screen = 'welcome' | 'decorate' | 'delivery' | 'greeting' | 'gift'
 
@@ -25,10 +26,16 @@ const deliveryLines = [
   'Delivering love and blessings...',
 ]
 
+const isValidName = (name: string) =>
+  name.length > 0 &&
+  name.length <= 80 &&
+  /^[\p{L}\p{M}]+(?:[ '\u2019.-][\p{L}\p{M}]+)*$/u.test(name)
+
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome')
   const [nameInput, setNameInput] = useState('')
   const [recipient, setRecipient] = useState('')
+  const [personalGreeting, setPersonalGreeting] = useState<PersonalizedGreeting | null>(null)
   const [placed, setPlaced] = useState<number[]>([])
   const [deliveryStep, setDeliveryStep] = useState(0)
   const [giftOpened, setGiftOpened] = useState(false)
@@ -37,8 +44,22 @@ function App() {
   const [musicError, setMusicError] = useState('')
   const audioRef = useRef<HTMLAudioElement>(null)
   const [error, setError] = useState('')
-  const friend = useMemo(() => getFriendGreeting(recipient), [recipient])
   const fullTree = placed.length === ornaments.length
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const friendName = params.get('friend')
+    const visitorName = params.get('name')
+    const linkedName = normalizeName(friendName || visitorName || '')
+    if (!linkedName) return
+    setNameInput(linkedName)
+    if (isValidName(linkedName)) {
+      const selectedGreeting = selectGreeting(linkedName)
+      setPersonalGreeting(selectedGreeting)
+      setRecipient(selectedGreeting.kind === 'friend' ? selectedGreeting.name : linkedName)
+      setScreen('decorate')
+    }
+  }, [])
 
   useEffect(() => {
     if (!fullTree || screen !== 'decorate') return
@@ -110,13 +131,15 @@ function App() {
   }, [copied])
 
   const begin = () => {
-    const cleanName = nameInput.trim().replace(/\s+/g, ' ')
-    if (cleanName.split(' ').length < 2) {
-      setError('Please enter both your first and last name to unwrap your greeting.')
+    const cleanName = normalizeName(nameInput)
+    if (!isValidName(cleanName)) {
+      setError('Please enter a valid name to unwrap your greeting.')
       return
     }
     setError('')
-    setRecipient(cleanName)
+    const selectedGreeting = selectGreeting(cleanName)
+    setPersonalGreeting(selectedGreeting)
+    setRecipient(selectedGreeting.kind === 'friend' ? selectedGreeting.name : cleanName)
     setPlaced([])
     setScreen('decorate')
   }
@@ -129,6 +152,7 @@ function App() {
   const openNewGreeting = () => {
     setNameInput('')
     setRecipient('')
+    setPersonalGreeting(null)
     setPlaced([])
     setGiftOpened(false)
     setError('')
@@ -136,13 +160,25 @@ function App() {
   }
 
   const share = async () => {
-    const message = `A little Christmas magic for you, ${recipient}! Open your greeting: ${window.location.origin}${window.location.pathname}`
+    const greetingUrl = createGreetingUrl()
+    const greetingText = personalGreeting
+      ? `${personalGreeting.message}${personalGreeting.signoff ? ` ${personalGreeting.signoff}` : ''}`
+      : ''
+    const message = `A little Christmas magic for you, ${recipient}!\n\n${greetingText}\n\nOpen your greeting: ${greetingUrl}`
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  const createGreetingUrl = () => {
+    const url = new URL(window.location.href)
+    url.search = ''
+    const friendSlug = friendGreetings.find((profile) => profile.name === recipient)?.name
+    url.searchParams.set(friendSlug ? 'friend' : 'name', friendSlug ?? recipient)
+    return url.toString()
   }
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}`)
+      await navigator.clipboard.writeText(createGreetingUrl())
       setCopied(true)
     } catch {
       setError('Could not copy automatically. Please copy the page address from your browser.')
@@ -197,12 +233,12 @@ function App() {
               <h1>HO HO HO!<br /><span>SANTA HAS</span><br /><em>A SURPRISE!</em> <span className="title-santa">🎅</span></h1>
               <p className="welcome-subtitle">Someone special deserves a little<br className="desktop-break" /> Christmas magic.</p>
               <form className="name-form" onSubmit={(event) => { event.preventDefault(); begin() }}>
-                <label className="sr-only" htmlFor="recipient-name">Your first and last name</label>
+                <label className="sr-only" htmlFor="recipient-name">Your name</label>
                 <input
                   autoComplete="name"
                   id="recipient-name"
                   onChange={(event) => { setNameInput(event.target.value); setError('') }}
-                  placeholder="Enter your first & last name..."
+                  placeholder="Enter your name..."
                   value={nameInput}
                 />
                 <button className="primary-button" type="submit">Unwrap your surprise <span>🎁</span></button>
@@ -228,6 +264,7 @@ function App() {
             <div className="section-heading">
               <span className="eyebrow"><span className="eyebrow-line" /> YOUR VERY OWN TREE <span className="eyebrow-line" /></span>
               <h2>Let’s make Christmas <em>magical.</em></h2>
+              <p>Santa has picked something special just for you, {recipient}! 🎅</p>
               <p>Your tree is waiting for a little sparkle, {recipient.split(' ')[0]}. Pick an ornament to decorate!</p>
             </div>
             <div className="decorate-layout">
@@ -293,12 +330,12 @@ function App() {
               <div className="greeting-tree"><ChristmasTree placed={ornaments.map((_, index) => index)} lit /></div>
             </div>
             <div className="personal-note">
-              <div className="personal-icon">{friend?.icon ?? '✨'}</div>
+              <div className="personal-icon">{personalGreeting?.icon ?? '✨'}</div>
               <div className="personal-content">
-                <span className="card-kicker">A LITTLE NOTE, JUST FOR YOU {friend && `· ${friend.theme.toUpperCase()}`}</span>
-                <h2>{friend ? `For ${friend.name}` : `For someone wonderful`}</h2>
-                <p>{friend?.message ?? 'May the kindness you give return to you tenfold, your dreams find room to grow, and the people you love always be close. You deserve all the little moments that make a life feel magical.'}</p>
-                {friend && <strong>{friend.signoff}</strong>}
+                <span className="card-kicker">A LITTLE NOTE, JUST FOR YOU {personalGreeting && `· ${personalGreeting.theme.toUpperCase()}`}</span>
+                <h2>{personalGreeting ? `For ${personalGreeting.name}` : 'For someone wonderful'}</h2>
+                <p>{personalGreeting?.message ?? ''}</p>
+                {personalGreeting?.signoff && <strong>{personalGreeting.signoff}</strong>}
               </div>
               <span className="note-decoration">✳</span>
             </div>
