@@ -5,6 +5,7 @@ const ASSIGNMENTS_KEY = 'christmas-exe:greeting-assignments'
 
 export interface PersonalizedGreeting {
   name: string
+  identifier?: string
   message: string
   signoff?: string
   icon: string

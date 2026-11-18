@@ -1,5 +1,8 @@
+import { jenishMainMessage } from './jenishGreeting'
+
 export interface FriendGreeting {
   name: string
+  identifier?: string
   message: string
   signoff: string
   icon: string
@@ -77,10 +80,21 @@ export const friendGreetings: FriendGreeting[] = [
     icon: '🧠',
     theme: 'rational, big-picture thinker',
   },
+  {
+    name: 'Jenish Makwana',
+    identifier: 'jenish',
+    message: jenishMainMessage,
+    signoff: 'YOUR BROTHER, FOREVER. ❤️',
+    icon: '🤝',
+    theme: 'Golden Brotherhood Christmas',
+  },
 ]
 
 export function getFriendGreeting(name: string): FriendGreeting | undefined {
   const normalizedName = name.trim().replace(/\s+/g, ' ').toLowerCase()
+  const identifierMatch = friendGreetings.find((friend) => friend.identifier === normalizedName)
+  if (identifierMatch) return identifierMatch
+
   const exactMatch = friendGreetings.find((friend) => friend.name.toLowerCase() === normalizedName)
   if (exactMatch) return exactMatch
 

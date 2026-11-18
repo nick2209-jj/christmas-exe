@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Check, Copy, Gift, Heart, Music2, RotateCcw, Share2, Sparkles, VolumeX } from 'lucide-react'
 import ChristmasTree from './components/ChristmasTree'
+import JenishGreeting from './components/JenishGreeting'
 import SantaSleigh from './components/SantaSleigh'
 import Snowfall from './components/Snowfall'
 import { friendGreetings } from './data/friends'
+import { jenishSecretMessage } from './data/jenishGreeting'
 import { normalizeName, selectGreeting, type PersonalizedGreeting } from './utils/greetings'
 
 type Screen = 'welcome' | 'decorate' | 'delivery' | 'greeting' | 'gift'
@@ -44,7 +46,12 @@ function App() {
   const [musicError, setMusicError] = useState('')
   const audioRef = useRef<HTMLAudioElement>(null)
   const [error, setError] = useState('')
+  const isJenish = personalGreeting?.name === 'Jenish Makwana'
   const fullTree = placed.length === ornaments.length
+
+  useLayoutEffect(() => {
+    if (screen === 'greeting') window.scrollTo(0, 0)
+  }, [screen])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -171,8 +178,8 @@ function App() {
   const createGreetingUrl = () => {
     const url = new URL(window.location.href)
     url.search = ''
-    const friendSlug = friendGreetings.find((profile) => profile.name === recipient)?.name
-    url.searchParams.set(friendSlug ? 'friend' : 'name', friendSlug ?? recipient)
+    const friendProfile = friendGreetings.find((profile) => profile.name === recipient)
+    url.searchParams.set(friendProfile ? 'friend' : 'name', friendProfile?.identifier ?? friendProfile?.name ?? recipient)
     return url.toString()
   }
 
@@ -320,25 +327,31 @@ function App() {
 
         {screen === 'greeting' && (
           <motion.section className="greeting-screen page-content" key="greeting" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.5 }}>
-            <div className="greeting-hero">
-              <div className="greeting-copy">
-                <span className="eyebrow"><span className="eyebrow-line" /> A LITTLE CHRISTMAS MAGIC <span className="eyebrow-line" /></span>
-                <h1>Merry Christmas,<br /><em>{recipient}!</em> <span>🎅</span></h1>
-                <p className="greeting-message">May your Christmas be filled with love, laughter, kindness, and beautiful memories. May the coming year bring endless opportunities and happiness!</p>
-                <div className="greeting-signature"><span className="signature-rule" /> with love & a little code <span className="signature-heart">♥</span></div>
-              </div>
-              <div className="greeting-tree"><ChristmasTree placed={ornaments.map((_, index) => index)} lit /></div>
-            </div>
-            <div className="personal-note">
-              <div className="personal-icon">{personalGreeting?.icon ?? '✨'}</div>
-              <div className="personal-content">
-                <span className="card-kicker">A LITTLE NOTE, JUST FOR YOU {personalGreeting && `· ${personalGreeting.theme.toUpperCase()}`}</span>
-                <h2>{personalGreeting ? `For ${personalGreeting.name}` : 'For someone wonderful'}</h2>
-                <p>{personalGreeting?.message ?? ''}</p>
-                {personalGreeting?.signoff && <strong>{personalGreeting.signoff}</strong>}
-              </div>
-              <span className="note-decoration">✳</span>
-            </div>
+            {isJenish ? (
+              <JenishGreeting />
+            ) : (
+              <>
+                <div className="greeting-hero">
+                  <div className="greeting-copy">
+                    <span className="eyebrow"><span className="eyebrow-line" /> A LITTLE CHRISTMAS MAGIC <span className="eyebrow-line" /></span>
+                    <h1>Merry Christmas,<br /><em>{recipient}!</em> <span>🎅</span></h1>
+                    <p className="greeting-message">May your Christmas be filled with love, laughter, kindness, and beautiful memories. May the coming year bring endless opportunities and happiness!</p>
+                    <div className="greeting-signature"><span className="signature-rule" /> with love & a little code <span className="signature-heart">♥</span></div>
+                  </div>
+                  <div className="greeting-tree"><ChristmasTree placed={ornaments.map((_, index) => index)} lit /></div>
+                </div>
+                <div className="personal-note">
+                  <div className="personal-icon">{personalGreeting?.icon ?? '✨'}</div>
+                  <div className="personal-content">
+                    <span className="card-kicker">A LITTLE NOTE, JUST FOR YOU {personalGreeting && `· ${personalGreeting.theme.toUpperCase()}`}</span>
+                    <h2>{personalGreeting ? `For ${personalGreeting.name}` : 'For someone wonderful'}</h2>
+                    <p>{personalGreeting?.message ?? ''}</p>
+                    {personalGreeting?.signoff && <strong>{personalGreeting.signoff}</strong>}
+                  </div>
+                  <span className="note-decoration">✳</span>
+                </div>
+              </>
+            )}
             <div className="oop-card">
               <div className="oop-heading"><span className="oop-icon">⌘</span><div><span className="card-kicker">A DEVELOPER’S CHRISTMAS WISH</span><h2>May your heart always…</h2></div></div>
               <div className="oop-grid">
@@ -360,13 +373,13 @@ function App() {
         )}
 
         {screen === 'gift' && (
-          <motion.section className="gift-screen page-content" key="gift" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.45 }}>
+          <motion.section className={`gift-screen page-content${isJenish ? ' jenish-gift-screen' : ''}`} key="gift" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.45 }}>
             <button className="back-button" onClick={() => setScreen('greeting')} type="button"><ArrowLeft size={16} /> Back to your greeting</button>
-            <div className="gift-content">
+            <div className={`gift-content${isJenish ? ' jenish-gift-content' : ''}`}>
               <span className="eyebrow"><span className="eyebrow-line" /> FROM SANTA, WITH LOVE <span className="eyebrow-line" /></span>
-              <h1>One last little<br /><em>something.</em></h1>
-              <p className="gift-intro">Santa left one more gift for you, {recipient.split(' ')[0]}.</p>
-              <div className={`big-gift${giftOpened ? ' big-gift--opened' : ''}`} aria-label={giftOpened ? 'Opened gift box' : 'Gift box'}>
+              <h1>{isJenish ? <>A GIFT FOR<br /><em>MY BROTHER.</em></> : <>One last little<br /><em>something.</em></>}</h1>
+              <p className="gift-intro">{isJenish ? 'A little reminder of the bond we will always share.' : `Santa left one more gift for you, ${recipient.split(' ')[0]}.`}</p>
+              <div className={`big-gift${giftOpened ? ' big-gift--opened' : ''}${isJenish ? ` jenish-big-gift${giftOpened ? ' jenish-big-gift--opened' : ''}` : ''}`} aria-label={giftOpened ? 'Opened gift box' : 'Gift box'}>
                 <div className="gift-glow" />
                 <div className="gift-burst">{Array.from({ length: 12 }, (_, index) => <i key={index} style={{ '--particle': index } as CSSProperties}>✦</i>)}</div>
                 <div className="gift-lid"><span /></div>
@@ -374,18 +387,21 @@ function App() {
                 <div className="gift-shadow" />
               </div>
               {!giftOpened ? (
-                <button className="primary-button gift-open-button" onClick={() => setGiftOpened(true)} type="button">Open your secret gift <Gift size={17} /></button>
+                <button className={`primary-button gift-open-button${isJenish ? ' jenish-gift-open-button' : ''}`} onClick={() => setGiftOpened(true)} type="button">
+                  {isJenish ? 'OPEN YOUR BROTHERHOOD GIFT 🎁' : <>Open your secret gift <Gift size={17} /></>}
+                </button>
               ) : (
-                <motion.div className="secret-message" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+                <motion.div className={`secret-message${isJenish ? ' jenish-secret-message' : ''}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
                   <span className="card-kicker">A GIFT TO CARRY WITH YOU</span>
-                  <h2>Dear {recipient},</h2>
-                  <p>
-                    And hey, never forget that the best gifts aren't the ones wrapped in pretty paper, the friends who make us smile, the people who care about us, and all those little memories that make life beautiful. ❤️🎄
-
-                    So keep smiling, keep shining, and never stop being your amazing self! ✨
-
-                    🎅 **Merry Christmas, my friend!** 🎁❤️ May your days be filled with happiness, laughter, and countless reasons to smile. Here's to more crazy moments, beautiful memories, and an awesome year ahead! 🥳🎄
-                  </p>
+                  <h2>{isJenish ? 'A promise between brothers.' : `Dear ${recipient},`}</h2>
+                  <p>{isJenish ? jenishSecretMessage : (
+                    <>
+                      And hey, never forget that the best gifts aren't the ones wrapped in pretty paper, the friends who make us smile, the people who care about us, and all those little memories that make life beautiful. ❤️🎄
+                      So keep smiling, keep shining, and never stop being your amazing self! ✨
+                      🎅 **Merry Christmas, my friend!** 🎁❤️ May your days be filled with happiness, laughter, and countless reasons to smile. Here's to more crazy moments, beautiful memories, and an awesome year ahead! 🥳🎄
+                    </>
+                  )}</p>
+                  {isJenish && <strong className="jenish-secret-signoff">YOUR BROTHER, FOREVER. ❤️</strong>}
                   <span className="secret-sparkle">✦</span>
                 </motion.div>
               )}
