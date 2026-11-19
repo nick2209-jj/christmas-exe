@@ -47,6 +47,7 @@ function App() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [error, setError] = useState('')
   const isJenish = personalGreeting?.name === 'Jenish Makwana'
+  const isOtherFriend = personalGreeting?.kind === 'friend' && !isJenish
   const fullTree = placed.length === ornaments.length
 
   useLayoutEffect(() => {
@@ -326,19 +327,30 @@ function App() {
         )}
 
         {screen === 'greeting' && (
-          <motion.section className="greeting-screen page-content" key="greeting" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.5 }}>
+          <motion.section className={`greeting-screen page-content${isOtherFriend ? ' greeting-screen--friend' : ''}`} key="greeting" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.5 }}>
             {isJenish ? (
               <JenishGreeting />
             ) : (
               <>
-                <div className="greeting-hero">
+                <div className={`greeting-hero${isOtherFriend ? ' greeting-hero--friend' : ''}`}>
                   <div className="greeting-copy">
                     <span className="eyebrow"><span className="eyebrow-line" /> A LITTLE CHRISTMAS MAGIC <span className="eyebrow-line" /></span>
-                    <h1>Merry Christmas,<br /><em>{recipient}!</em> <span>🎅</span></h1>
-                    <p className="greeting-message">May your Christmas be filled with love, laughter, kindness, and beautiful memories. May the coming year bring endless opportunities and happiness!</p>
-                    <div className="greeting-signature"><span className="signature-rule" /> with love & a little code <span className="signature-heart">♥</span></div>
+                    {isOtherFriend && <div className="friend-entrance-stars" aria-hidden="true"><span>✦</span><span>✦</span></div>}
+                    <h1>Merry Christmas,<br /><em>{isOtherFriend ? `${recipient.split(' ')[0]}!` : `${recipient}!`}</em>{!isOtherFriend && <> <span>🎅</span></>}</h1>
+                    {!isOtherFriend && (
+                      <>
+                        <p className="greeting-message">May your Christmas be filled with love, laughter, kindness, and beautiful memories. May the coming year bring endless opportunities and happiness!</p>
+                        <div className="greeting-signature"><span className="signature-rule" /> with {isOtherFriend ? 'joy' : 'love'} & a little code <span className="signature-heart">♥</span></div>
+                      </>
+                    )}
                   </div>
                   <div className="greeting-tree"><ChristmasTree placed={ornaments.map((_, index) => index)} lit /></div>
+                  {isOtherFriend && (
+                    <div className="friend-entrance-followup">
+                      <p className="greeting-message">May your Christmas be filled with love, laughter, kindness, and beautiful memories. May the coming year bring endless opportunities and happiness!</p>
+                      <div className="greeting-signature"><span className="signature-rule" /> with joy & a little code <span className="signature-heart">♥</span></div>
+                    </div>
+                  )}
                 </div>
                 <div className="personal-note">
                   <div className="personal-icon">{personalGreeting?.icon ?? '✨'}</div>
@@ -373,13 +385,13 @@ function App() {
         )}
 
         {screen === 'gift' && (
-          <motion.section className={`gift-screen page-content${isJenish ? ' jenish-gift-screen' : ''}`} key="gift" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.45 }}>
+          <motion.section className={`gift-screen page-content${isJenish ? ' jenish-gift-screen' : ''}${isOtherFriend ? ' friend-gift-screen' : ''}`} key="gift" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.45 }}>
             <button className="back-button" onClick={() => setScreen('greeting')} type="button"><ArrowLeft size={16} /> Back to your greeting</button>
-            <div className={`gift-content${isJenish ? ' jenish-gift-content' : ''}`}>
+            <div className={`gift-content${isJenish ? ' jenish-gift-content' : ''}${isOtherFriend ? ' friend-gift-content' : ''}`}>
               <span className="eyebrow"><span className="eyebrow-line" /> FROM SANTA, WITH LOVE <span className="eyebrow-line" /></span>
               <h1>{isJenish ? <>A GIFT FOR<br /><em>MY BROTHER.</em></> : <>One last little<br /><em>something.</em></>}</h1>
               <p className="gift-intro">{isJenish ? 'A little reminder of the bond we will always share.' : `Santa left one more gift for you, ${recipient.split(' ')[0]}.`}</p>
-              <div className={`big-gift${giftOpened ? ' big-gift--opened' : ''}${isJenish ? ` jenish-big-gift${giftOpened ? ' jenish-big-gift--opened' : ''}` : ''}`} aria-label={giftOpened ? 'Opened gift box' : 'Gift box'}>
+              <div className={`big-gift${giftOpened ? ' big-gift--opened' : ''}${isJenish ? ` jenish-big-gift${giftOpened ? ' jenish-big-gift--opened' : ''}` : ''}${isOtherFriend ? ` friend-big-gift${giftOpened ? ' friend-big-gift--opened' : ''}` : ''}`} aria-label={giftOpened ? 'Opened gift box' : 'Gift box'}>
                 <div className="gift-glow" />
                 <div className="gift-burst">{Array.from({ length: 12 }, (_, index) => <i key={index} style={{ '--particle': index } as CSSProperties}>✦</i>)}</div>
                 <div className="gift-lid"><span /></div>
@@ -387,11 +399,11 @@ function App() {
                 <div className="gift-shadow" />
               </div>
               {!giftOpened ? (
-                <button className={`primary-button gift-open-button${isJenish ? ' jenish-gift-open-button' : ''}`} onClick={() => setGiftOpened(true)} type="button">
+                <button className={`primary-button gift-open-button${isJenish ? ' jenish-gift-open-button' : ''}${isOtherFriend ? ' friend-gift-open-button' : ''}`} onClick={() => setGiftOpened(true)} type="button">
                   {isJenish ? 'OPEN YOUR BROTHERHOOD GIFT 🎁' : <>Open your secret gift <Gift size={17} /></>}
                 </button>
               ) : (
-                <motion.div className={`secret-message${isJenish ? ' jenish-secret-message' : ''}`} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+                <motion.div className={`secret-message${isJenish ? ' jenish-secret-message' : ''}${isOtherFriend ? ' friend-secret-message' : ''}`} initial={isOtherFriend ? { opacity: 0, scale: 0.9, rotateX: -8 } : { opacity: 0, y: 14 }} animate={isOtherFriend ? { opacity: 1, scale: 1, rotateX: 0 } : { opacity: 1, y: 0 }} transition={isOtherFriend ? { duration: 0.65, ease: 'easeOut' } : undefined}>
                   <span className="card-kicker">A GIFT TO CARRY WITH YOU</span>
                   <h2>{isJenish ? 'A promise between brothers.' : `Dear ${recipient},`}</h2>
                   <p>{isJenish ? jenishSecretMessage : (
